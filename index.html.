@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HANNPAY - Toko Perlengkapan Sekolah</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+/* ================= 1. VARIABEL & RESET ================= */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --primary: #0f9f8d;
+  --primary-hover: #0b8575;
+  --primary-light: #e0f2f1;
+  --bg-body: #f8fafc;
+  --bg-card: #ffffff;
+  --text-main: #1e293b;
+  --text-muted: #64748b;
+  --border: #e2e8f0;
+  --danger: #ef4444;
+  --radius: 10px;
+  --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+body {
+  font-family: var(--font);
+  background: var(--bg-body);
+  color: var(--text-main);
+  display: flex;
+  min-height: 100vh;
+  font-size: 14px;
+}
+
+h1, h2, h3, h4 { font-weight: 600; color: var(--text-main); }
+button { font-family: inherit; cursor: pointer; border: none; background: none; }
+
+input, select, textarea {
+  font-family: inherit; font-size: 14px; padding: 10px 12px;
+  border: 1px solid var(--border); border-radius: 6px; outline: none;
+  background: var(--bg-card); color: var(--text-main);
+}
+input:focus, select:focus { border-color: var(--primary); }
+
+/* ================= 2. LAYOUT UTAMA ================= */
+.sidebar {
+  width: 250px; background: var(--bg-card);
+  border-right: 1px solid var(--border); position: fixed;
+  top: 0; bottom: 0; left: 0; display: flex; flex-direction: column;
+  z-index: 100; transition: transform .2s;
+}
+.sidebar-brand { padding: 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+.sidebar-brand .icon { width: 32px; height: 32px; background: var(--primary); color: #fff; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+.sidebar-menu { flex: 1; padding: 16px 12px; overflow-y: auto; }
+.menu-label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin: 16px 0 8px 12px; }
+.menu-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 8px; color: var(--text-muted); font-weight: 500; cursor: pointer; margin-bottom: 2px; transition: .2s; }
+.menu-item:hover { background: var(--bg-body); color: var(--text-main); }
+.menu-item.active { background: var(--primary-light); color: var(--primary); font-weight: 600; }
+
+.main-content { flex: 1; margin-left: 250px; padding: 24px; width: calc(100% - 250px); transition: margin .2s; }
+.page { display: none; }
+.page.active { display: block; }
+
+.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+.page-header h2 { font-size: 20px; }
+
+/* Header Mobile */
+.mobile-header { display: none; align-items: center; gap: 12px; margin-bottom: 16px; background: var(--bg-card); padding: 12px; border-radius: var(--radius); border: 1px solid var(--border); }
+.btn-menu-mobile { font-size: 24px; color: var(--text-main); padding: 4px 8px; }
+.mobile-header h2 { font-size: 16px; margin: 0; }
+
+/* ================= 3. KOMPONEN UMUM ================= */
+/* Shadow (bayangan) dihapus biar ngebut */
+.card { background: var(--bg-card); border-radius: var(--radius); border: 1px solid var(--border); margin-bottom: 20px; overflow: hidden; }
+.card-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+.card-header h3 { font-size: 15px; }
+.card-body { padding: 20px; }
+
+.btn { padding: 8px 16px; border-radius: 6px; font-weight: 600; font-size: 13px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; transition: .15s; border: 1px solid transparent; }
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover { background: var(--primary-hover); }
+.btn-primary:disabled { background: #cbd5e1; cursor: not-allowed; }
+.btn-outline { border-color: var(--border); color: var(--text-main); background: transparent; }
+.btn-outline:hover { background: var(--bg-body); }
+.btn-danger { background: #fee2e2; color: var(--danger); border-color: #fca5a5; }
+.btn-sm { padding: 6px 12px; font-size: 12px; }
+.btn-block { width: 100%; }
+
+/* ================= 4. DASHBOARD ================= */
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+.stat-card { background: var(--bg-card); border-radius: var(--radius); padding: 16px; border: 1px solid var(--border); display: flex; align-items: center; gap: 16px; }
+.stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; background: var(--primary-light); color: var(--primary); }
+.stat-info h4 { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+.stat-info .val { font-size: 20px; font-weight: 700; }
+
+/* ================= 5. HALAMAN KASIR ================= */
+.kasir-layout { display: grid; grid-template-columns: 1fr 350px; gap: 20px; align-items: start; }
+.produk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; padding: 0 20px 20px; }
+.produk-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; cursor: pointer; }
+.produk-card:hover { border-color: var(--primary); }
+.produk-card .kode { font-size: 10px; color: var(--text-muted); background: var(--bg-body); padding: 2px 6px; border-radius: 4px; margin-bottom: 8px; display: inline-block; }
+.produk-card h4 { font-size: 13px; margin-bottom: 4px; }
+.produk-card .harga { font-size: 13px; font-weight: 700; color: var(--primary); margin-bottom: 8px; }
+.produk-card .stok { font-size: 11px; color: var(--text-muted); }
+.produk-card .stok.habis { color: var(--danger); }
+
+.keranjang-list { max-height: 300px; overflow-y: auto; padding: 0 20px; }
+.keranjang-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.ki-qty { display: flex; align-items: center; gap: 8px; margin: 0 12px; }
+.ki-qty button { width: 24px; height: 24px; border: 1px solid var(--border); border-radius: 4px; font-weight: bold; background: var(--bg-card); color: var(--text-main); }
+.ki-qty button:hover { background: var(--primary-light); color: var(--primary); border-color: var(--primary); }
+
+.ringkasan-box { padding: 20px; background: var(--bg-body); }
+.ringkasan-line { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 8px; color: var(--text-muted); }
+.ringkasan-line span:last-child { font-weight: 600; color: var(--text-main); }
+.ringkasan-line.total { border-top: 2px dashed var(--border); padding-top: 12px; margin-top: 12px; font-size: 16px; font-weight: 700; color: var(--primary); }
+
+/* ================= 6. MODAL & QRIS ================= */
+.modal { display: none; position: fixed; inset: 0; background: rgba(15,23,42,.7); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+.modal.open { display: flex; }
+.modal-content { background: var(--bg-card); border-radius: var(--radius); width: 100%; max-width: 450px; overflow: hidden; border: 1px solid var(--border); }
+.modal-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+.modal-header h3 { font-size: 16px; }
+.modal-close { font-size: 18px; color: var(--text-muted); cursor: pointer; }
+.modal-body { padding: 20px; }
+.modal-footer { padding: 16px 20px; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end; }
+
+.metode-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
+.metode-btn { padding: 10px 4px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; font-weight: 600; display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--text-main); background: var(--bg-card); }
+.metode-btn.active { border-color: var(--primary); background: var(--primary-light); color: var(--primary); }
+
+.total-box { background: var(--bg-body); padding: 16px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.total-box h4 { font-size: 14px; font-weight: 500; }
+.total-box .val { font-size: 20px; font-weight: 700; color: var(--primary); }
+
+/* Area QRIS */
+.qris-area { display: none; text-align: center; padding: 10px 0; }
+.qris-area.show { display: block; }
+.qris-logo { font-size: 24px; font-weight: 800; margin-bottom: 2px; letter-spacing: 1px; }
+.qris-logo span:nth-child(1) { color: #e11d48; }
+.qris-logo span:nth-child(2) { color: #2563eb; }
+.qris-logo span:nth-child(3) { color: #16a34a; }
+.qris-logo span:nth-child(4) { color: #eab308; }
+.qris-box { background: #fff; padding: 16px; border-radius: 12px; display: inline-block; margin: 16px 0; border: 2px solid var(--border); }
+.qris-nominal { font-size: 22px; font-weight: 800; color: var(--text-main); margin: 8px 0; }
+.qris-timer { font-size: 14px; color: var(--danger); font-weight: 700; margin-bottom: 16px; }
+.qris-status { font-size: 13px; color: var(--text-muted); margin-bottom: 16px; }
+
+/* ================= 7. TABEL & STRUK ================= */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border); }
+th { background: var(--bg-body); font-weight: 600; color: var(--text-muted); font-size: 12px; text-transform: uppercase; }
+tr:hover td { background: var(--bg-body); }
+.badge { padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; display: inline-block; }
+.badge-success { background: #dcfce7; color: #166534; }
+.badge-danger { background: #fee2e2; color: #991b1b; }
+.badge-warning { background: #fef3c7; color: #92400e; }
+
+.struk-area { font-family: 'Courier New', monospace; font-size: 12px; color: #000; background: #fff; padding: 10px; width: 100%; max-width: 320px; margin: 0 auto; }
+.struk-header { text-align: center; margin-bottom: 16px; }
+.struk-header h4 { font-size: 16px; margin-bottom: 4px; color: #000; }
+.struk-line { display: flex; justify-content: space-between; margin-bottom: 4px; }
+.struk-divider { border-top: 1px dashed #000; margin: 10px 0; }
+.struk-total { font-weight: bold; font-size: 14px; margin-top: 8px; border-top: 1px solid #000; padding-top: 8px; }
+
+/* ================= 8. TOAST & RESPONSIVE ================= */
+.toast { position: fixed; bottom: 20px; right: 20px; background: var(--text-main); color: var(--bg-card); padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: 500; z-index: 2000; transform: translateY(100px); opacity: 0; transition: .2s; }
+.toast.show { transform: translateY(0); opacity: 1; }
+.toast.success { background: var(--primary); color: #fff; }
+.toast.error { background: var(--danger); color: #fff; }
+
+@media (max-width: 1024px) {
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .kasir-layout { grid-template-columns: 1fr; }
+}
+@media (max-width: 768px) {
+  .sidebar { transform: translateX(-100%); }
+  .sidebar.open { transform: translateX(0); }
+  .main-content { margin-left: 0; width: 100%; padding: 16px; }
+  .stats-grid { grid-template-columns: 1fr; }
+  .metode-grid { grid-template-columns: repeat(2, 1fr); }
+  
+  .mobile-header { display: flex; }
+}
+</style>
+</head>
+<body>
+
+<!-- ================= SIDEBAR ================= -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="icon">H</div>
+    <div><h1 style="font-size:16px">HANNPAY</h1><p style="font-size:11px;color:var(--text-muted)">Toko Sekolah</p></div>
+  </div>
+  <div class="sidebar-menu">
+    <div class="menu-label">Platform</div>
+    <div class="menu-item active" data-page="dashboard"><span>📊</span> Dashboard</div>
+    <div class="menu-item" data-page="kasir"><span>🛒</span> Kasir</div>
+    <div class="menu-label">Manajemen</div>
+    <div class="menu-item" data-page="barang"><span>📦</span> Daftar Barang</div>
+    <div class="menu-label">Laporan</div>
+    <div class="menu-item" data-page="riwayat"><span>📜</span> Riwayat</div>
+  </div>
+</aside>
+
+<!-- ================= MAIN CONTENT ================= -->
+<main class="main-content">
+  
+  <!-- Header Khusus HP -->
+  <div class="mobile-header">
+    <button class="btn-menu-mobile" id="btnMenuMobile">☰</button>
+    <h2>HANNPAY</h2>
+  </div>
+
+  <!-- PAGE: DASHBOARD -->
+  <section class="page active" id="page-dashboard">
+    <div class="page-header"><h2>Dashboard</h2></div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-icon">🛍️</div><div class="stat-info"><h4>Transaksi Hari Ini</h4><div class="val" id="dashTrx">0</div></div></div>
+      <div class="stat-card"><div class="stat-icon">💵</div><div class="stat-info"><h4>Pendapatan</h4><div class="val" id="dashPendapatan">Rp0</div></div></div>
+      <div class="stat-card"><div class="stat-icon">📦</div><div class="stat-info"><h4>Barang Terjual</h4><div class="val" id="dashBarang">0</div></div></div>
+      <div class="stat-card"><div class="stat-icon">📋</div><div class="stat-info"><h4>Total Transaksi</h4><div class="val" id="dashTotal">0</div></div></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h3>Transaksi Terbaru</h3></div>
+      <div class="table-wrap">
+        <table><thead><tr><th>No</th><th>Pelanggan</th><th>Total</th></tr></thead><tbody id="dashTabel"></tbody></table>
+      </div>
+    </div>
+  </section>
+
+  <!-- PAGE: KASIR -->
+  <section class="page" id="page-kasir">
+    <div class="page-header"><h2>Kasir</h2></div>
+    <div class="kasir-layout">
+      <div class="card">
+        <div class="card-header"><h3>Menu Barang</h3><span id="kasirTotalItem" style="font-size:12px;color:var(--text-muted)">0 Item</span></div>
+        <div class="card-body" style="padding-bottom:0">
+          <input type="text" id="kasirCari" placeholder="🔍 Cari barang..." style="width:100%;margin-bottom:16px">
+        </div>
+        <div class="produk-grid" id="kasirGrid"></div>
+      </div>
+      <div class="card">
+        <div class="card-header" style="background:var(--bg-body)"><h3>Pesanan</h3><button class="btn btn-outline btn-sm" id="btnKosongkan">Kosongkan</button></div>
+        <div class="card-body" style="padding:16px;background:var(--bg-body)">
+          <input type="text" id="kasirNama" placeholder="Nama Pelanggan..." style="width:100%;margin-bottom:8px">
+          <select id="kasirAnggota" style="width:100%"><option value="tidak">Bukan Anggota</option><option value="ya">Anggota (+3% Diskon)</option></select>
+        </div>
+        <div class="keranjang-list" id="kasirKeranjang"><div style="text-align:center;padding:30px;color:var(--text-muted);font-size:13px">Belum ada pesanan</div></div>
+        <div class="ringkasan-box">
+          <div class="ringkasan-line"><span>Total Belanja</span><span id="rkTotal">Rp0</span></div>
+          <div class="ringkasan-line"><span>Total Diskon</span><span id="rkDiskon">0%</span></div>
+          <div class="ringkasan-line"><span>Biaya Layanan</span><span id="rkLayanan">Rp0</span></div>
+          <div class="ringkasan-line total"><span>Total</span><span id="rkTotalBayar">Rp0</span></div>
+          <button class="btn btn-primary btn-block" style="margin-top:16px;padding:12px" id="btnBayar" disabled>Bayar</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PAGE: BARANG -->
+  <section class="page" id="page-barang">
+    <div class="page-header"><h2>Daftar Barang</h2><button class="btn btn-primary" id="btnTambahBarang">+ Tambah</button></div>
+    <div class="card">
+      <div class="table-wrap">
+        <table><thead><tr><th>Kode</th><th>Nama</th><th>Harga</th><th>Stok</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="tabelBarang"></tbody></table>
+      </div>
+    </div>
+  </section>
+
+  <!-- PAGE: RIWAYAT -->
+  <section class="page" id="page-riwayat">
+    <div class="page-header"><h2>Riwayat Transaksi</h2></div>
+    <div class="card">
+      <div class="card-body" style="padding-bottom:0"><input type="text" id="cariRiwayat" placeholder="🔍 Cari invoice..." style="width:100%;margin-bottom:16px"></div>
+      <div class="table-wrap">
+        <table><thead><tr><th>Invoice</th><th>Tanggal</th><th>Pelanggan</th><th>Total</th><th>Metode</th><th>Aksi</th></tr></thead><tbody id="tabelRiwayat"></tbody></table>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ================= MODAL PEMBAYARAN ================= -->
+<div class="modal" id="modalBayar">
+  <div class="modal-content">
+    <div class="modal-header"><h3>Pembayaran</h3><span class="modal-close" id="closeBayar">✕</span></div>
+    <div class="modal-body">
+      <div class="total-box"><h4>Total Tagihan</h4><div class="val" id="modalTotal">Rp0</div></div>
+      
+      <div id="metodeSection">
+        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:8px">Metode Pembayaran</label>
+        <div class="metode-grid">
+          <button class="metode-btn active" data-metode="tunai"><span>💵</span> Tunai</button>
+          <button class="metode-btn" data-metode="qris"><span>📱</span> QRIS</button>
+        </div>
+      </div>
+
+      <!-- Area Tunai -->
+      <div id="areaTunai">
+        <div style="margin-bottom:12px">
+          <label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px">Uang Diterima</label>
+          <input type="number" id="inputUang" placeholder="0" style="width:100%;font-size:18px;padding:12px">
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+          <button class="btn btn-outline btn-sm" onclick="setUang(10000)">10rb</button>
+          <button class="btn btn-outline btn-sm" onclick="setUang(20000)">20rb</button>
+          <button class="btn btn-outline btn-sm" onclick="setUang(50000)">50rb</button>
+          <button class="btn btn-outline btn-sm" onclick="setUang(100000)">100rb</button>
+          <button class="btn btn-outline btn-sm" onclick="setUangPas()">Uang Pas</button>
+        </div>
+        <div id="infoKembalian" style="font-size:13px;font-weight:600;text-align:center;margin-bottom:12px"></div>
+      </div>
+
+      <!-- Area QRIS -->
+      <div id="areaQris" class="qris-area">
+        <div class="qris-logo"><span>Q</span><span>R</span><span>I</span><span>S</span></div>
+        <div style="font-size:10px;color:var(--text-muted)">HANNPAY SIMULATION</div>
+        <div class="qris-box" id="qrisCanvas"></div>
+        <div class="qris-nominal" id="qrisNominal">Rp0</div>
+        <div class="qris-timer" id="qrisTimer">Sisa waktu: 05:00</div>
+        <div class="qris-status">Scan QR di atas dengan M-Banking (Simulasi)</div>
+      </div>
+
+    </div>
+    <div class="modal-footer" id="modalFooter">
+      <button class="btn btn-outline" id="btnBatalBayar">Batal</button>
+      <button class="btn btn-primary" id="btnProses">Proses Pembayaran</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL STRUK ================= -->
+<div class="modal" id="modalStruk">
+  <div class="modal-content" style="max-width:400px">
+    <div class="modal-header"><h3>Struk Pembayaran</h3><span class="modal-close" id="closeStruk">✕</span></div>
+    <div class="modal-body" id="strukContent" style="background:#f1f5f9;padding:20px"></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" id="btnPdf">📄 PDF</button>
+      <button class="btn btn-primary" id="btnSelesaiStruk">Selesai</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL BARANG ================= -->
+<div class="modal" id="modalBarang">
+  <div class="modal-content">
+    <div class="modal-header"><h3 id="titleModalBarang">Tambah Barang</h3><span class="modal-close" id="closeModalBarang">✕</span></div>
+    <div class="modal-body">
+      <input type="hidden" id="editIndex">
+      <div style="margin-bottom:12px"><label>Kode</label><input type="text" id="inpKode" style="width:100%;margin-top:4px"></div>
+      <div style="margin-bottom:12px"><label>Nama</label><input type="text" id="inpNama" style="width:100%;margin-top:4px"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><label>Harga</label><input type="number" id="inpHarga" style="width:100%;margin-top:4px"></div>
+        <div><label>Stok</label><input type="number" id="inpStok" style="width:100%;margin-top:4px"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" id="btnBatalBarang">Batal</button>
+      <button class="btn btn-primary" id="btnSimpanBarang">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================= 1. DATA & STATE ================= */
+const defaultBarang = [
+  {kode:'BRG001', nama:'Buku Tulis', harga:5000, stok:50},
+  {kode:'BRG002', nama:'Pensil', harga:3000, stok:80},
+  {kode:'BRG003', nama:'Pulpen', harga:4000, stok:60},
+  {kode:'BRG004', nama:'Penghapus', harga:2000, stok:70},
+  {kode:'BRG005', nama:'Tas Sekolah', harga:150000, stok:10},
+  {kode:'BRG006', nama:'Penggaris', harga:3000, stok:40},
+  {kode:'BRG007', nama:'Spidol', harga:8000, stok:35},
+  {kode:'BRG008', nama:'Pensil Warna', harga:25000, stok:20}
+];
+
+let state = { barang: [], keranjang: [], transaksi: [], counter: 1, metode: 'tunai' };
+const LS_KEY = 'hannpay_v4';
+
+function simpanData(){ localStorage.setItem(LS_KEY, JSON.stringify(state)); }
+function muatData(){
+  const saved = localStorage.getItem(LS_KEY);
+  if(saved){
+    try{
+      const d = JSON.parse(saved);
+      state.barang = d.barang || JSON.parse(JSON.stringify(defaultBarang));
+      state.keranjang = d.keranjang || [];
+      state.transaksi = d.transaksi || [];
+      state.counter = d.counter || 1;
+      return;
+    }catch(e){}
+  }
+  state.barang = JSON.parse(JSON.stringify(defaultBarang));
+  simpanData();
+}
+
+/* ================= 2. UTILITAS ================= */
+const rupiah = (n) => 'Rp' + Math.round(n).toLocaleString('id-ID');
+const toast = (msg, type='success') => {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.className = `toast show ${type}`;
+  setTimeout(() => el.className = `toast ${type}`, 2500);
+};
+const getWaktu = () => new Date().toLocaleString('id-ID', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+const nomorInvoice = () => {
+  const d = new Date();
+  return `INV${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}${String(state.counter).padStart(4,'0')}`;
+};
+
+/* ================= 3. NAVIGASI & MOBILE MENU ================= */
+const sidebar = document.getElementById('sidebar');
+document.getElementById('btnMenuMobile').onclick = () => {
+  sidebar.classList.toggle('open');
+};
+
+document.querySelectorAll('.menu-item').forEach(item => {
+  item.onclick = () => {
+    document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
+    item.classList.add('active');
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('page-' + item.dataset.page).classList.add('active');
+    sidebar.classList.remove('open');
+    
+    if(item.dataset.page === 'dashboard') renderDashboard();
+    if(item.dataset.page === 'barang') renderTabelBarang();
+    if(item.dataset.page === 'riwayat') renderRiwayat();
+  };
+});
+
+/* ================= 4. PRODUK & KERANJANG ================= */
+function renderProduk(){
+  const grid = document.getElementById('kasirGrid');
+  const cari = document.getElementById('kasirCari').value.toLowerCase();
+  const filtered = state.barang.filter(b => b.nama.toLowerCase().includes(cari) || b.kode.toLowerCase().includes(cari));
+  document.getElementById('kasirTotalItem').textContent = filtered.length + ' Item';
+  
+  grid.innerHTML = filtered.map(b => `
+    <div class="produk-card" onclick="tambahKeranjang('${b.kode}')">
+      <div class="kode">${b.kode}</div>
+      <h4>${b.nama}</h4>
+      <div class="harga">${rupiah(b.harga)}</div>
+      <div class="stok ${b.stok===0?'habis':''}">${b.stok===0?'Habis':'Sisa: '+b.stok}</div>
+    </div>
+  `).join('');
+}
+document.getElementById('kasirCari').addEventListener('input', renderProduk);
+
+window.tambahKeranjang = (kode) => {
+  const b = state.barang.find(x => x.kode === kode);
+  if(!b || b.stok === 0) return toast('Stok habis!', 'error');
+  const item = state.keranjang.find(x => x.kode === kode);
+  if(item){
+    if(item.jumlah >= b.stok) return toast('Melebihi stok!', 'error');
+    item.jumlah++;
+  } else {
+    state.keranjang.push({kode: b.kode, nama: b.nama, harga: b.harga, jumlah: 1});
+  }
+  simpanData(); renderKeranjang(); hitungTotal();
+};
+
+function renderKeranjang(){
+  const list = document.getElementById('kasirKeranjang');
+  if(state.keranjang.length === 0){
+    list.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-muted);font-size:13px">Belum ada pesanan</div>';
+    return;
+  }
+  list.innerHTML = state.keranjang.map((item, idx) => `
+    <div class="keranjang-item">
+      <div style="flex:1"><h4 style="font-size:13px">${item.nama}</h4><p style="font-size:11px;color:var(--text-muted)">${rupiah(item.harga)}</p></div>
+      <div class="ki-qty">
+        <button onclick="ubahQty(${idx}, -1)">−</button>
+        <span style="font-size:13px;font-weight:600;min-width:20px;text-align:center">${item.jumlah}</span>
+        <button onclick="ubahQty(${idx}, 1)">+</button>
+      </div>
+      <div style="font-weight:700;font-size:13px;min-width:70px;text-align:right">${rupiah(item.harga * item.jumlah)}</div>
+      <div onclick="hapusItem(${idx})" style="color:var(--danger);cursor:pointer;margin-left:8px">🗑️</div>
+    </div>
+  `).join('');
+}
+
+window.ubahQty = (idx, d) => {
+  const item = state.keranjang[idx];
+  const b = state.barang.find(x => x.kode === item.kode);
+  if(d > 0 && item.jumlah >= b.stok) return toast('Melebihi stok!', 'error');
+  item.jumlah += d;
+  if(item.jumlah <= 0) state.keranjang.splice(idx, 1);
+  simpanData(); renderKeranjang(); hitungTotal();
+};
+
+window.hapusItem = (idx) => {
+  state.keranjang.splice(idx, 1);
+  simpanData(); renderKeranjang(); hitungTotal();
+};
+
+document.getElementById('btnKosongkan').onclick = () => {
+  if(!state.keranjang.length) return;
+  if(confirm('Kosongkan pesanan?')){
+    state.keranjang = [];
+    simpanData(); renderKeranjang(); hitungTotal();
+  }
+};
+
+/* ================= 5. HITUNG TOTAL ================= */
+function hitungTotal(){
+  const total = state.keranjang.reduce((s, i) => s + i.harga * i.jumlah, 0);
+  const isAnggota = document.getElementById('kasirAnggota').value === 'ya';
+  
+  let diskonBelanja = 0;
+  if(total >= 500000) diskonBelanja = 15;
+  else if(total >= 250000) diskonBelanja = 10;
+  else if(total >= 100000) diskonBelanja = 5;
+  
+  let diskonAnggota = isAnggota ? 3 : 0;
+  let totalDiskon = diskonBelanja + diskonAnggota;
+  if(totalDiskon > 18) totalDiskon = 18;
+  
+  const potongan = total * totalDiskon / 100;
+  const setelahDiskon = total - potongan;
+  const layanan = (setelahDiskon < 50000 && total > 0) ? 2000 : 0;
+  const totalBayar = setelahDiskon + layanan;
+  
+  document.getElementById('rkTotal').textContent = rupiah(total);
+  document.getElementById('rkDiskon').textContent = totalDiskon + '%';
+  document.getElementById('rkLayanan').textContent = rupiah(layanan);
+  document.getElementById('rkTotalBayar').textContent = rupiah(totalBayar);
+  document.getElementById('btnBayar').disabled = (state.keranjang.length === 0 || totalBayar === 0);
+  
+  return { total, diskonBelanja, diskonAnggota, potongan, setelahDiskon, layanan, totalBayar, totalDiskon };
+}
+document.getElementById('kasirAnggota').onchange = hitungTotal;
+
+/* ================= 6. MODAL PEMBAYARAN ================= */
+const modalBayar = document.getElementById('modalBayar');
+let timerQris = null;
+
+document.getElementById('btnBayar').onclick = () => {
+  const t = hitungTotal();
+  document.getElementById('modalTotal').textContent = rupiah(t.totalBayar);
+  document.getElementById('inputUang').value = '';
+  document.getElementById('infoKembalian').innerHTML = '';
+  setMetode('tunai');
+  modalBayar.classList.add('open');
+};
+
+document.getElementById('closeBayar').onclick = () => {
+  clearInterval(timerQris);
+  modalBayar.classList.remove('open');
+};
+document.getElementById('btnBatalBayar').onclick = () => {
+  clearInterval(timerQris);
+  modalBayar.classList.remove('open');
+};
+
+document.querySelectorAll('.metode-btn').forEach(btn => {
+  btn.onclick = () => setMetode(btn.dataset.metode);
+});
+
+function setMetode(m){
+  state.metode = m;
+  document.querySelectorAll('.metode-btn').forEach(b => b.classList.toggle('active', b.dataset.metode === m));
+  
+  const areaTunai = document.getElementById('areaTunai');
+  const areaQris = document.getElementById('areaQris');
+  const btnProses = document.getElementById('btnProses');
+  const btnBatal = document.getElementById('btnBatalBayar');
+  
+  const simBtnLama = document.getElementById('btnSimulasiBayar');
+  if(simBtnLama) simBtnLama.remove();
+
+  if(m === 'tunai'){
+    clearInterval(timerQris);
+    areaTunai.style.display = 'block';
+    areaQris.classList.remove('show');
+    btnProses.style.display = 'inline-flex';
+    btnProses.textContent = 'Proses Pembayaran';
+    btnProses.onclick = prosesTunai;
+    btnBatal.textContent = 'Batal';
+  } else if(m === 'qris'){
+    areaTunai.style.display = 'none';
+    areaQris.classList.add('show');
+    btnProses.style.display = 'none';
+    btnBatal.textContent = 'Tutup';
+    
+    const t = hitungTotal();
+    document.getElementById('qrisNominal').textContent = rupiah(t.totalBayar);
+    const canvas = document.getElementById('qrisCanvas');
+    canvas.innerHTML = '';
+    const qrContent = `HANNPAY|INV:${nomorInvoice()}|TOTAL:${t.totalBayar}`;
+    
+    new QRCode(canvas, {
+      text: qrContent,
+      width: 180, height: 180,
+      colorDark: '#000000', colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.H
+    });
+
+    clearInterval(timerQris);
+    let sisa = 300;
+    const timerEl = document.getElementById('qrisTimer');
+    timerEl.textContent = 'Sisa waktu: 05:00';
+    timerEl.style.color = 'var(--danger)';
+    timerQris = setInterval(() => {
+      sisa--;
+      if(sisa <= 0){
+        clearInterval(timerQris);
+        timerEl.textContent = 'Waktu habis!';
+        return;
+      }
+      const mnt = String(Math.floor(sisa/60)).padStart(2,'0');
+      const dtk = String(sisa%60).padStart(2,'0');
+      timerEl.textContent = `Sisa waktu: ${mnt}:${dtk}`;
+    }, 1000);
+
+    setTimeout(() => {
+      if(!modalBayar.classList.contains('open')) return;
+      let simBtn = document.getElementById('btnSimulasiBayar');
+      if(!simBtn){
+        simBtn = document.createElement('button');
+        simBtn.id = 'btnSimulasiBayar';
+        simBtn.className = 'btn btn-primary btn-block';
+        simBtn.style.marginTop = '10px';
+        simBtn.textContent = '✅ Simulasi: Pembayaran Diterima';
+        simBtn.onclick = () => { clearInterval(timerQris); prosesQris(); };
+        areaQris.appendChild(simBtn);
+      }
+    }, 3000);
+  }
+}
+
+// Fitur Pecahan Uang Cepat (Optimasi biar gak ngeleg)
+window.setUang = (val) => {
+  const input = document.getElementById('inputUang');
+  input.value = val;
+  // Panggil langsung fungsi update kembalian tanpa event manual
+  const t = hitungTotal();
+  const info = document.getElementById('infoKembalian');
+  if(val < t.totalBayar){ info.innerHTML = `<span style="color:var(--danger)">Kurang ${rupiah(t.totalBayar - val)}</span>`; }
+  else { info.innerHTML = `<span style="color:var(--primary)">Kembalian: ${rupiah(val - t.totalBayar)}</span>`; }
+};
+
+window.setUangPas = () => {
+  const t = hitungTotal();
+  setUang(t.totalBayar);
+};
+
+document.getElementById('inputUang').oninput = (e) => {
+  const t = hitungTotal();
+  const uang = parseFloat(e.target.value) || 0;
+  const info = document.getElementById('infoKembalian');
+  if(uang === 0){ info.innerHTML = ''; }
+  else if(uang < t.totalBayar){ info.innerHTML = `<span style="color:var(--danger)">Kurang ${rupiah(t.totalBayar - uang)}</span>`; }
+  else { info.innerHTML = `<span style="color:var(--primary)">Kembalian: ${rupiah(uang - t.totalBayar)}</span>`; }
+};
+
+/* ================= 7. PROSES TRANSAKSI ================= */
+let lastTrx = null;
+
+function prosesTunai(){
+  const nama = document.getElementById('kasirNama').value.trim();
+  if(!nama) return toast('Nama pelanggan harus diisi!', 'error');
+  const t = hitungTotal();
+  const uang = parseFloat(document.getElementById('inputUang').value) || 0;
+  if(uang < t.totalBayar) return toast('Uang kurang!', 'error');
+  
+  selesaikanTransaksi(nama, t, uang, uang - t.totalBayar);
+}
+
+function prosesQris(){
+  const nama = document.getElementById('kasirNama').value.trim();
+  if(!nama) return toast('Nama pelanggan harus diisi!', 'error');
+  const t = hitungTotal();
+  selesaikanTransaksi(nama, t, t.totalBayar, 0);
+}
+
+function selesaikanTransaksi(nama, t, uang, kembali){
+  for(let item of state.keranjang){
+    const b = state.barang.find(x => x.kode === item.kode);
+    if(!b || b.stok < item.jumlah) return toast(`Stok ${item.nama} habis!`, 'error');
+  }
+  
+  const trx = {
+    no: nomorInvoice(), waktu: new Date().toISOString(), nama: nama,
+    items: [...state.keranjang],
+    total: t.total, diskon: t.totalDiskon, potongan: t.potongan,
+    layanan: t.layanan, totalBayar: t.totalBayar,
+    metode: state.metode, uangDiterima: uang, kembalian: kembali
+  };
+  
+  trx.items.forEach(i => {
+    const b = state.barang.find(x => x.kode === i.kode);
+    if(b) b.stok -= i.jumlah;
+  });
+  
+  state.transaksi.push(trx);
+  state.counter++;
+  simpanData();
+  
+  state.keranjang = [];
+  document.getElementById('kasirNama').value = '';
+  document.getElementById('kasirAnggota').value = 'tidak';
+  renderProduk(); renderKeranjang(); hitungTotal();
+  
+  modalBayar.classList.remove('open');
+  tampilkanStruk(trx);
+}
+
+/* ================= 8. STRUK PEMBAYARAN ================= */
+function buatHTMLStruk(trx){
+  const items = trx.items.map(i => `<div class="struk-line"><span>${i.nama} (${i.jumlah}x)</span><span>${rupiah(i.harga*i.jumlah)}</span></div>`).join('');
+  return `
+    <div class="struk-area" id="strukPrintable">
+      <div class="struk-header"><h4>HANNPAY</h4><div style="font-size:11px">Toko Perlengkapan Sekolah</div><div style="font-size:11px">Jl. Pendidikan No. 45</div></div>
+      <div class="struk-divider"></div>
+      <div class="struk-line"><span>Invoice</span><span>${trx.no}</span></div>
+      <div class="struk-line"><span>Tanggal</span><span>${getWaktu()}</span></div>
+      <div class="struk-line"><span>Pelanggan</span><span>${trx.nama}</span></div>
+      <div class="struk-divider"></div>
+      ${items}
+      <div class="struk-divider"></div>
+      <div class="struk-line"><span>Subtotal</span><span>${rupiah(trx.total)}</span></div>
+      <div class="struk-line"><span>Diskon (${trx.diskon}%)</span><span>-${rupiah(trx.potongan)}</span></div>
+      ${trx.layanan>0?`<div class="struk-line"><span>Biaya Layanan</span><span>${rupiah(trx.layanan)}</span></div>`:''}
+      <div class="struk-line struk-total"><span>TOTAL</span><span>${rupiah(trx.totalBayar)}</span></div>
+      <div class="struk-divider"></div>
+      <div class="struk-line"><span>Metode</span><span>${trx.metode.toUpperCase()}</span></div>
+      <div class="struk-line"><span>Bayar</span><span>${rupiah(trx.uangDiterima)}</span></div>
+      ${trx.metode==='tunai'?`<div class="struk-line"><span>Kembali</span><span>${rupiah(trx.kembalian)}</span></div>`:''}
+      <div style="text-align:center;margin-top:16px;font-size:11px">Terima kasih!</div>
+    </div>
+  `;
+}
+
+function tampilkanStruk(trx){
+  lastTrx = trx;
+  document.getElementById('strukContent').innerHTML = buatHTMLStruk(trx);
+  document.getElementById('modalStruk').classList.add('open');
+}
+document.getElementById('closeStruk').onclick = () => document.getElementById('modalStruk').classList.remove('open');
+document.getElementById('btnSelesaiStruk').onclick = () => document.getElementById('modalStruk').classList.remove('open');
+
+document.getElementById('btnPdf').onclick = () => {
+  const el = document.getElementById('strukPrintable');
+  if(!el) return;
+  html2pdf().from(el).set({
+    margin: 10, filename: `struk-${lastTrx.no}.pdf`,
+    jsPDF: {unit:'mm', format:[80, 150], orientation:'portrait'}
+  }).save();
+};
+
+/* ================= 9. DASHBOARD, BARANG, RIWAYAT ================= */
+function renderDashboard(){
+  const today = new Date().toDateString();
+  const hariIni = state.transaksi.filter(t => new Date(t.waktu).toDateString() === today);
+  document.getElementById('dashTrx').textContent = hariIni.length;
+  document.getElementById('dashPendapatan').textContent = rupiah(hariIni.reduce((s,t) => s+t.totalBayar, 0));
+  document.getElementById('dashBarang').textContent = hariIni.reduce((s,t) => s + t.items.reduce((a,i)=>a+i.jumlah,0), 0);
+  document.getElementById('dashTotal').textContent = state.transaksi.length;
+  
+  const tbody = document.getElementById('dashTabel');
+  const recent = state.transaksi.slice(-5).reverse();
+  tbody.innerHTML = recent.length ? recent.map(t => `<tr><td>${t.no.slice(-4)}</td><td>${t.nama}</td><td>${rupiah(t.totalBayar)}</td></tr>`).join('') 
+    : '<tr><td colspan="3" style="text-align:center;color:var(--text-muted)">Belum ada data</td></tr>';
+}
+
+function renderTabelBarang(){
+  const tbody = document.getElementById('tabelBarang');
+  tbody.innerHTML = state.barang.map((b, idx) => {
+    let badge = '<span class="badge badge-success">Aman</span>';
+    if(b.stok === 0) badge = '<span class="badge badge-danger">Habis</span>';
+    else if(b.stok <= 5) badge = '<span class="badge badge-warning">Menipis</span>';
+    return `<tr>
+      <td><code>${b.kode}</code></td><td>${b.nama}</td><td>${rupiah(b.harga)}</td><td>${b.stok}</td><td>${badge}</td>
+      <td><button class="btn btn-outline btn-sm" onclick="editBarang(${idx})">✏️</button>
+      <button class="btn btn-danger btn-sm" onclick="hapusBarang(${idx})">🗑️</button></td>
+    </tr>`;
+  }).join('');
+}
+
+window.editBarang = (idx) => {
+  const b = state.barang[idx];
+  document.getElementById('titleModalBarang').textContent = 'Edit Barang';
+  document.getElementById('editIndex').value = idx;
+  document.getElementById('inpKode').value = b.kode;
+  document.getElementById('inpNama').value = b.nama;
+  document.getElementById('inpHarga').value = b.harga;
+  document.getElementById('inpStok').value = b.stok;
+  document.getElementById('modalBarang').classList.add('open');
+};
+window.hapusBarang = (idx) => {
+  if(confirm('Hapus barang ini?')){
+    state.barang.splice(idx, 1);
+    simpanData(); renderTabelBarang(); renderProduk();
+  }
+};
+document.getElementById('btnTambahBarang').onclick = () => {
+  document.getElementById('titleModalBarang').textContent = 'Tambah Barang';
+  document.getElementById('editIndex').value = '-1';
+  document.getElementById('inpKode').value = 'BRG' + String(state.barang.length+1).padStart(3,'0');
+  document.getElementById('inpNama').value = '';
+  document.getElementById('inpHarga').value = '';
+  document.getElementById('inpStok').value = '';
+  document.getElementById('modalBarang').classList.add('open');
+};
+document.getElementById('closeModalBarang').onclick = () => document.getElementById('modalBarang').classList.remove('open');
+document.getElementById('btnBatalBarang').onclick = () => document.getElementById('modalBarang').classList.remove('open');
+
+document.getElementById('btnSimpanBarang').onclick = () => {
+  const idx = parseInt(document.getElementById('editIndex').value);
+  const kode = document.getElementById('inpKode').value.trim();
+  const nama = document.getElementById('inpNama').value.trim();
+  const harga = parseFloat(document.getElementById('inpHarga').value);
+  const stok = parseInt(document.getElementById('inpStok').value);
+  if(!kode || !nama || isNaN(harga) || isNaN(stok)) return toast('Lengkapi data!', 'error');
+  if(state.barang.find((b,i) => b.kode === kode && i !== idx)) return toast('Kode sudah ada!', 'error');
+  if(idx >= 0) state.barang[idx] = {kode, nama, harga, stok};
+  else state.barang.push({kode, nama, harga, stok});
+  simpanData(); renderTabelBarang(); renderProduk();
+  document.getElementById('modalBarang').classList.remove('open');
+  toast('Data disimpan!');
+};
+
+function renderRiwayat(){
+  const cari = document.getElementById('cariRiwayat').value.toLowerCase();
+  const filtered = state.transaksi.filter(t => t.no.toLowerCase().includes(cari) || t.nama.toLowerCase().includes(cari)).reverse();
+  const tbody = document.getElementById('tabelRiwayat');
+  tbody.innerHTML = filtered.length ? filtered.map(t => `
+    <tr><td><strong>${t.no}</strong></td><td>${getWaktu(new Date(t.waktu))}</td><td>${t.nama}</td>
+    <td><strong>${rupiah(t.totalBayar)}</strong></td><td><span class="badge badge-success">${t.metode.toUpperCase()}</span></td>
+    <td><button class="btn btn-outline btn-sm" onclick="cetakUlang('${t.no}')">🖨️</button></td></tr>
+  `).join('') : '<tr><td colspan="6" style="text-align:center;color:var(--text-muted)">Tidak ada data</td></tr>';
+}
+document.getElementById('cariRiwayat').oninput = renderRiwayat;
+window.cetakUlang = (no) => {
+  const trx = state.transaksi.find(t => t.no === no);
+  if(trx) tampilkanStruk(trx);
+};
+
+/* ================= 10. INIT ================= */
+function init(){
+  muatData();
+  renderProduk(); renderKeranjang(); hitungTotal();
+  renderDashboard(); renderTabelBarang(); renderRiwayat();
+}
+init();
+</script>
+</body>
+</html>
